@@ -31,7 +31,7 @@ for model_name, y_pred in predictions.items():
     metrics[model_name] = {
         "R² Score": r2_score(y_test, y_pred),
         "MAE": mean_absolute_error(y_test, y_pred),
-        "RMSE": mean_squared_error(y_test, y_pred, squared=False)
+        "RMSE": np.sqrt(mean_squared_error(y_test, y_pred))
     }
 
 metrics_df = pd.DataFrame(metrics).T
