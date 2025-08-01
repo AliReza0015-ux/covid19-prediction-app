@@ -7,11 +7,12 @@ from model_rf_xgb_ridge import (
     load_and_prepare_data,
     evaluate_model,
     get_rf_model,
-    get_xgb_model
+    get_xgb_model,
+    get_ridge_model
 )
 
 st.set_page_config(page_title="COVID-19 Case Predictor", layout="wide")
-st.title("COVID-19 Case Prediction (Random Forest & XGBoost)")
+st.title("COVID-19 Case Prediction (Ridge, Random Forest, XGBoost)")
 
 # Upload or use default
 uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
@@ -26,8 +27,10 @@ else:
 X_train, X_test, y_train, y_test = load_and_prepare_data(filepath)
 
 # Model choice
-model_choice = st.radio("Choose Model", ["Random Forest", "XGBoost"])
-if model_choice == "Random Forest":
+model_choice = st.radio("Choose Model", ["Ridge Regression", "Random Forest", "XGBoost"])
+if model_choice == "Ridge Regression":
+    model = get_ridge_model()
+elif model_choice == "Random Forest":
     model = get_rf_model()
 else:
     model = get_xgb_model()
