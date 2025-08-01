@@ -1,73 +1,49 @@
 # app.py
-
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+from model_rf_xgb_ridge import load_and_prepare_data, train_models, predict_all
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+import numpy as np
 
-from clustering import (
-    load_data,
-    train_kmeans,
-    calculate_wcss,
-    calculate_silhouette
-)
+st.set_page_config(page_title="COVID-19 Prediction", layout="wide")
+st.title("COVID-19 Case Prediction using Ridge, Random Forest & XGBoost")
 
-st.set_page_config(page_title="Customer Segmentation", layout="wide")
-st.title(" Mall Customer Segmentation using KMeans Clustering")
+st.markdown("Upload your dataset or use the default one to see predictions from three models.")
 
-# Upload or load default data
+# File uploader
 uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    st.success("Custom file uploaded.")
+    filepath = uploaded_file
+    st.success("File uploaded successfully!")
 else:
-    df = load_data("data/mall_customers.csv")
-    st.info("Using default dataset from /data/mall_customers.csv")
+    filepath = "FinalDataSet.csv"
+    st.info("Using default dataset: FinalDataSet.csv")
 
-st.subheader(" Data Preview")
-st.dataframe(df.head())
+# Load data and train models
+X_train, X_test, y_train, y_test = load_and_prepare_data(filepath)
+models = train_models(X_train, y_train)
+predictions = predict_all(models, X_test)
 
-# Feature selection
-numerical_features = df.select_dtypes(include='number').columns.tolist()
-features = st.multiselect("Select features for clustering", numerical_features,
-                          default=['Annual_Income', 'Spending_Score'])
+# Display metrics
+st.header("Model Evaluation Metrics")
+metrics = {}
+for model_name, y_pred in predictions.items():
+    metrics[model_name] = {
+        "R² Score": r2_score(y_test, y_pred),
+        "MAE": mean_absolute_error(y_test, y_pred),
+        "RMSE": mean_squared_error(y_test, y_pred, squared=False)
+    }
 
-# k selection
-k = st.slider("Choose number of clusters (k)", min_value=2, max_value=10, value=5)
+metrics_df = pd.DataFrame(metrics).T
+st.dataframe(metrics_df.style.format("{:.2f}"))
 
-# Train and predict
-if len(features) >= 2:
-    model = train_kmeans(df, features, k)
-    df['Cluster'] = model.labels_
+# Visualize predictions
+st.header("Actual vs Predicted")
+for model_name, y_pred in predictions.items():
+    result_df = pd.DataFrame({
+        "Actual": y_test.values,
+        "Predicted": y_pred
+    }).reset_index(drop=True)
 
-    st.subheader(" Cluster Visualization")
-    if len(features) == 2:
-        fig, ax = plt.subplots()
-        sns.scatterplot(data=df, x=features[0], y=features[1], hue='Cluster', palette='Set2', ax=ax)
-        plt.title("Customer Segments")
-        st.pyplot(fig)
-    else:
-        st.info("Please select exactly 2 features to see cluster plot.")
-
-    # Elbow Plot
-    st.subheader("Elbow Method")
-    k_range = range(2, 11)
-    wcss = calculate_wcss(df, features, k_range)
-    fig2, ax2 = plt.subplots()
-    ax2.plot(k_range, wcss, marker='o')
-    ax2.set_xlabel("Number of Clusters (k)")
-    ax2.set_ylabel("WCSS")
-    ax2.set_title("Elbow Plot")
-    st.pyplot(fig2)
-
-    # Silhouette Plot
-    st.subheader("Silhouette Score")
-    sil_scores = calculate_silhouette(df, features, k_range)
-    fig3, ax3 = plt.subplots()
-    ax3.plot(k_range, sil_scores, marker='o', color='green')
-    ax3.set_xlabel("Number of Clusters (k)")
-    ax3.set_ylabel("Silhouette Score")
-    ax3.set_title("Silhouette Plot")
-    st.pyplot(fig3)
-else:
-    st.warning("Please select at least 2 numerical features.")
+    st.subheader(f"{model_name}")
+    st.line_chart(result_df)
