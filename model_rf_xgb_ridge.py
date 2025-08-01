@@ -5,16 +5,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
-from sklearn.pipeline import Pipeline
+from sklearn.linear_model import Ridge
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 def load_and_prepare_data(filepath="FinalDataSet.csv"):
     df = pd.read_csv(filepath, encoding="ISO-8859-1")
+    df = df.drop(columns=["Health_Region_ID", "Health_Region_name"], errors="ignore")
     df = df.fillna(df.median(numeric_only=True))
-    df_model = df.drop(columns=["Health_Region_ID", "Health_Region_name"])
-    X = df_model.drop(columns=["cases_may13"])
-    y = df_model["cases_may13"]
+    df_model = df.drop(columns=["cases_may13"])
+    X = df_model
+    y = df["cases_may13"]
     return train_test_split(X, y, test_size=0.2, random_state=42)
 
 def evaluate_model(model, X_test, y_test, name="Model"):
@@ -41,9 +44,6 @@ def get_xgb_model():
         ("scaler", StandardScaler()),
         ("model", XGBRegressor(objective='reg:squarederror', n_estimators=100, max_depth=4, random_state=42))
     ])
-
-from sklearn.linear_model import Ridge
-from sklearn.decomposition import PCA
 
 def get_ridge_model():
     return Pipeline([
