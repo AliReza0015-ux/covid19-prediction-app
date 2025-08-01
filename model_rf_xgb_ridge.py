@@ -41,3 +41,14 @@ def get_xgb_model():
         ("scaler", StandardScaler()),
         ("model", XGBRegressor(objective='reg:squarederror', n_estimators=100, max_depth=4, random_state=42))
     ])
+
+from sklearn.linear_model import Ridge
+from sklearn.decomposition import PCA
+
+def get_ridge_model():
+    return Pipeline([
+        ("imputer", SimpleImputer(strategy="mean")),
+        ("scaler", StandardScaler()),
+        ("pca", PCA(n_components=0.95)),
+        ("model", Ridge(alpha=1.0))
+    ])
